@@ -133,7 +133,11 @@ def InitParam(ser):
 
 
 if __name__ == '__main__':
+<<<<<<< Updated upstream
     logging.basicConfig(filename="./logs/powerconsume.log", level=logging.DEBUG, format='%(asctime)s-[line:%(lineno)-3d]-%(levelname)-6s : %(message)s')
+=======
+    logging.basicConfig(filename="./logs/powerconsume.log", level=logging.DEBUG, format='%(asctime)-19s-[line:%(lineno)-3d]-%(levelname)-5s : %(message)s')
+>>>>>>> Stashed changes
     ser = serial.Serial(SmartMeter.searchPort(), 2400, parity='E', timeout=1)
     addr, cmd = InitParam(ser)
     meter = SmartMeter(addr, cmd)
