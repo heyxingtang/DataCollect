@@ -6,6 +6,7 @@ import time
 import MySQLdb
 import serial.tools.list_ports
 import logging
+import argparse
 
 
 class SmartMeter:
@@ -80,19 +81,19 @@ class SmartMeter:
             if port[2] != 'n/a':
                 return port[0]
 
-    @staticmethod
-    def getAddr(ser):
-        """
-        获取电表通信地址
-        :param ser:
-        :return: 电表通信地址
-        """
-        ser.write(b'\x68\xAA\xAA\xAA\xAA\xAA\xAA\x68\x13\x00\xDF\x16')
-        while True:
-            if ser.inWaiting() == 18:
-                break
-        addr = ser.read(ser.inWaiting()).encode('hex')[2:14]
-        return addr
+    # @staticmethod
+    # def getAddr(ser):
+    #     """
+    #     获取电表通信地址
+    #     :param ser:
+    #     :return: 电表通信地址
+    #     """
+    #     ser.write(b'\x68\xAA\xAA\xAA\xAA\xAA\xAA\x68\x13\x00\xDF\x16')
+    #     while True:
+    #         if ser.inWaiting() == 18:
+    #             break
+    #     addr = ser.read(ser.inWaiting()).encode('hex')[2:14]
+    #     return addr
 
     @staticmethod
     def getCS(command):
@@ -119,29 +120,55 @@ class SmartMeter:
             bcd += s * pow(10.0, i)
         return bcd
 
+    @staticmethod
+    def convertAddr(meter_id):
+        """
+        通过电表id转换为电表通信地址addr
+        :param id_str: 电表表盘上的id
+        :return: 电表通信地址
+        """
+        if len(meter_id) != 16:
+            logging.fatal("Incorrect length of meter id. Expecting 16")
+            exit(1)
+        else:
+            addr = "%s%s%s%s%s%s" % (
+                meter_id[14:16], meter_id[12:14], meter_id[10:12], meter_id[8:10], meter_id[6:8], meter_id[4:6])
+            logging.info("id:%s convert to addr:%s", meter_id, addr)
+            return addr
 
-def InitParam(ser):
+
+def InitParam(id_list):
     """
     初始化电表通信地址，操作指令等参数
     :param ser:
-    :return:
+    :return:电表对象列表
     """
-    addr = SmartMeter.getAddr(ser)
-    command = b'68' + addr + b'68110433333433' + SmartMeter.getCS(b'68' + addr + b'68110433333433') + b'16'
-    logging.info("Init meter parameters, addr : %s, collect command : %s", addr, command)
-    return addr, command
+    meter_list = []
+    for meter_id in id_list:
+        addr = SmartMeter.convertAddr(meter_id)
+        command = b'68' + addr + b'68110433333433' + SmartMeter.getCS(b'68' + addr + b'68110433333433') + b'16'
+        logging.info("Init meter parameters, addr : %s, collect command : %s", addr, command)
+        meter_list.append(SmartMeter(addr, command))
+    return meter_list
 
 
 if __name__ == '__main__':
-<<<<<<< Updated upstream
-    logging.basicConfig(filename="./logs/powerconsume.log", level=logging.DEBUG, format='%(asctime)s-[line:%(lineno)-3d]-%(levelname)-6s : %(message)s')
-=======
-    logging.basicConfig(filename="./logs/powerconsume.log", level=logging.DEBUG, format='%(asctime)-19s-[line:%(lineno)-3d]-%(levelname)-5s : %(message)s')
->>>>>>> Stashed changes
+    logging.basicConfig(filename="~/access-point/logs/powerconsume.log", level=logging.DEBUG, format='%(asctime)-19s-[line:%(lineno)-3d]-%(levelname)-5s : %(message)s')
     ser = serial.Serial(SmartMeter.searchPort(), 2400, parity='E', timeout=1)
-    addr, cmd = InitParam(ser)
-    meter = SmartMeter(addr, cmd)
+
+    parser = argparse.ArgumentParser(description="Multi meter acquisition program")
+    parser.add_argument("-m", "--meter", help="Initial start up list", default="1605343448000232,1605343453000135")
+    parser.add_argument("-a", "--add", help="Add new meter into collect program", action="append")
+    args = parser.parse_args()
+    id_list = []
+    if args.add:
+        id_list = args.add
+    else:
+        id_list = args.meter.split(',')
+
+    meter_list = InitParam(id_list)
 
     while True:
-        meter.collect(ser)
+        for meter in meter_list:
+            meter.collect(ser)
         time.sleep(40)
