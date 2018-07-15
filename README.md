@@ -40,11 +40,11 @@ optional arguments:
 
 初始化启动 通过-m 参数指定==待启动==电表id 
 ```python
-python powerconsume.log -m 电表id1,电表id2,电表id3
+python powerconsume.py -m 电表id1,电表id2,电表id3
 ```
 
 启动过程中如需添加电表可通过 -a 参数指定==待添加==电表id
 ```python
-python powerconsume.log -a 电表id4 -a 电表id5
+python powerconsume.py -a 电表id4 -a 电表id5
 ```
 若不加任何参数，则按默认电表组 ["1605343448000232","1605343453000135"] 启动采集程序
